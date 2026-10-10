@@ -24,7 +24,21 @@ button{border:0;border-radius:9px;padding:12px 15px;font-weight:bold;cursor:poin
 .secondary{background:#29263d;color:white;margin-top:10px}
 .scene{background:#10101c;border:1px solid #39334f;padding:14px;border-radius:10px;margin:12px 0}
 .scene h3{margin-top:0;color:#c4b5fd}
-.scene p{font-size:14px;overflow-wrap:anywhere}
+.scene p{font-size:14px;overflow-wrap:anywhere}.video-button{
+  background:#a78bfa;
+  color:#171026;
+  margin-top:10px;
+  width:100%;
+}
+.video-result{
+  margin-top:12px;
+  overflow-wrap:anywhere;
+}
+.video-result video{
+  width:100%;
+  border-radius:10px;
+  margin-top:10px;
+}
 .tag{color:#c4b5fd;font-size:12px}
 footer{text-align:center;color:#89869e;padding:25px;font-size:12px}
 </style>
@@ -85,8 +99,13 @@ footer{text-align:center;color:#89869e;padding:25px;font-size:12px}
     <p id="message" class="muted" aria-live="polite"></p>
   </section>
 
-  <section class="card">
-    <h2>🚀 Next: AI video generation</h2>
+    <section class="card">
+  <h2>🚀 Next: AI video generation</h2>
+  <p class="muted">
+    Generate scene prompts and request actual video clips from
+    our connected AI video service. Video generation may require credits.
+  </p>
+</section></h2>
     <p class="muted">This first version creates scene prompts locally. Actual moving video requires a compatible video-generation model. We will explore free options in the next stage.</p>
   </section>
 </main>
@@ -140,17 +159,96 @@ function makeScenes(){
     const h = document.createElement("h3");
     h.textContent = "Scene "+(i+1)+" · "+heading;
     const p = document.createElement("p");
-    p.textContent = prompt;
-    box.append(h,p);
-    container.appendChild(box);
-  }
+p.textContent = prompt;
+
+const videoButton = document.createElement("button");
+videoButton.className = "video-button";
+videoButton.textContent = "🎬 Generate Actual Video";
+
+const videoResult = document.createElement("div");
+videoResult.className = "video-result";
+videoResult.setAttribute("aria-live", "polite");
+
+videoButton.addEventListener("click", () => {
+  generateVideo(prompt, videoButton, videoResult);
+});
+
+box.append(h, p, videoButton, videoResult);
+container.appendChild(box);
 
   plan = "NOVAAI MOVIE STUDIO\n"+type+"\n\n"+
     prompts.join("\n\n");
   document.getElementById("message").textContent =
     count+" scene prompts created! Your plan is ready.";
 }
+async function generateVideo(prompt, button, resultBox) {
+  button.disabled = true;
+  button.textContent = "Starting video...";
+  resultBox.textContent = "Sending your scene to the video service...";
 
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+
+    const job = await response.json();
+
+    if (!response.ok) {
+      throw new Error(job.error || "Could not start video generation.");
+    }
+
+    if (!job.id) {
+      throw new Error("The video service did not return a job ID.");
+    }
+
+    resultBox.textContent = "Video is processing. Please wait...";
+
+    for (let attempt = 0; attempt < 60; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      const checkResponse = await fetch(
+        "/api/generate?id=" + encodeURIComponent(job.id)
+      );
+
+      const status = await checkResponse.json();
+
+      if (!checkResponse.ok) {
+        throw new Error(status.error || "Could not check video status.");
+      }
+
+      if (status.status === "succeeded" && status.output) {
+        const video = document.createElement("video");
+        video.controls = true;
+        video.playsInline = true;
+        video.src = status.output;
+
+        resultBox.replaceChildren();
+        resultBox.appendChild(video);
+
+        button.textContent = "Video generated ✓";
+        return;
+      }
+
+      if (status.status === "failed" || status.status === "canceled") {
+        throw new Error(status.error || "Video generation did not complete.");
+      }
+
+      resultBox.textContent =
+        "Generating video... " + (attempt + 1) + "/60 checks";
+    }
+
+    throw new Error(
+      "This is taking longer than expected. Try checking again later."
+    );
+  } catch (error) {
+    resultBox.textContent = "Error: " + error.message;
+    button.textContent = "Try Generate Video Again";
+  } finally {
+    button.disabled = false;
+  }
+}
 async function copyPlan(){
   if(!plan){
     document.getElementById("message").textContent =
