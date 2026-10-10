@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaAI Movie Studio</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b14;color:#f5f3ff;font-family:Arial,sans-serif}
+header{padding:22px 18px;border-bottom:1px solid #29283b}
+.logo{font-size:24px;font-weight:800;color:#c4b5fd}
+header p{color:#aaa7c0;font-size:13px}
+main{max-width:850px;margin:auto;padding:22px 16px}
+h1{font-size:32px;margin-bottom:8px}
+p{line-height:1.5}
+.muted{color:#aaa7c0}
+.card{background:#151522;border:1px solid #302d45;border-radius:16px;padding:18px;margin:18px 0}
+label{display:block;margin:14px 0 7px;font-size:14px}
+textarea,select{width:100%;padding:12px;border-radius:9px;border:1px solid #39364f;background:#0d0d18;color:white;font:inherit}
+textarea{min-height:115px;resize:vertical}
+button{border:0;border-radius:9px;padding:12px 15px;font-weight:bold;cursor:pointer}
+.primary{background:#a78bfa;color:#171026;width:100%;margin-top:16px}
+.secondary{background:#29263d;color:white;margin-top:10px}
+.scene{background:#10101c;border:1px solid #39334f;padding:14px;border-radius:10px;margin:12px 0}
+.scene h3{margin-top:0;color:#c4b5fd}
+.scene p{font-size:14px;overflow-wrap:anywhere}
+.tag{color:#c4b5fd;font-size:12px}
+footer{text-align:center;color:#89869e;padding:25px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✦ NovaAI Studio</div>
+  <p>Your ideas. Your stories. Your movie universe.</p>
+</header>
+<main>
+  <p class="tag">YOUR CREATIVE AI WORKSPACE</p>
+  <h1>Make your next movie.</h1>
+  <p class="muted">Turn a simple idea into a scene-by-scene movie plan.</p>
+
+  <section class="card">
+    <h2>🎬 Create a project</h2>
+    <label for="story">Describe your story or video idea</label>
+    <textarea id="story" placeholder="Example: Queen Aria returns to her magical castle with help from forest animals..."></textarea>
+
+    <label for="type">What are you creating?</label>
+    <select id="type">
+      <option>Fantasy movie</option>
+      <option>Animated movie</option>
+      <option>Children's nursery rhyme</option>
+      <option>YouTube short video</option>
+      <option>Adventure movie</option>
+      <option>Educational video</option>
+    </select>
+
+    <label for="look">Visual style</label>
+    <select id="look">
+      <option>Cinematic 3D animation</option>
+      <option>Realistic cinema</option>
+      <option>Colorful children's animation</option>
+      <option>Anime-inspired animation</option>
+      <option>Fantasy storybook</option>
+    </select>
+
+    <label for="count">Number of scenes</label>
+    <select id="count">
+      <option value="3">3 scenes</option>
+      <option value="5" selected>5 scenes</option>
+      <option value="8">8 scenes</option>
+      <option value="10">10 scenes</option>
+    </select>
+
+    <button class="primary" onclick="makeScenes()">✨ Generate my scene prompts</button>
+  </section>
+
+  <section class="card">
+    <h2>🎞️ Your movie scenes</h2>
+    <p class="muted">Your generated plan will appear here.</p>
+    <div id="results" aria-live="polite">
+      <p class="muted">Enter an idea above and tap Generate.</p>
+    </div>
+    <button class="secondary" onclick="copyPlan()">Copy complete movie plan</button>
+    <button class="secondary" onclick="downloadPlan()">Download movie plan</button>
+    <p id="message" class="muted" aria-live="polite"></p>
+  </section>
+
+  <section class="card">
+    <h2>🚀 Next: AI video generation</h2>
+    <p class="muted">This first version creates scene prompts locally. Actual moving video requires a compatible video-generation model. We will explore free options in the next stage.</p>
+  </section>
+</main>
+<footer>NovaAI Movie Studio · Your creativity starts here</footer>
+
+<script>
+let plan = "";
+
+function makeScenes(){
+  const idea = document.getElementById("story").value.trim();
+  if(!idea){
+    document.getElementById("message").textContent =
+      "Please describe your movie idea first.";
+    document.getElementById("story").focus();
+    return;
+  }
+
+  const type = document.getElementById("type").value;
+  const look = document.getElementById("look").value;
+  const count = Number(document.getElementById("count").value);
+  const stages = [
+    "Opening: introduce the main character and world",
+    "Discovery: reveal a mystery, goal, or challenge",
+    "Journey: show the character taking action",
+    "Turning point: introduce a surprising development",
+    "Challenge: build tension toward the goal",
+    "New clue: reveal something important",
+    "Climax: face the biggest challenge",
+    "Teamwork: bring characters together",
+    "Resolution: show the outcome",
+    "Finale: end with a memorable final shot"
+  ];
+
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+  const prompts = [];
+
+  for(let i=0;i<count;i++){
+    const heading = stages[i];
+    const prompt = "Create scene "+(i+1)+" of a "+type+
+      ". Story: "+idea+
+      ". Scene purpose: "+heading+
+      ". Visual style: "+look+
+      ". Use consistent characters, clothing, colors and locations. "+
+      "Include expressive actions, cinematic composition, suitable lighting "+
+      "and smooth visual continuity. No unexpected character changes.";
+
+    prompts.push("SCENE "+(i+1)+" — "+heading+"\n"+prompt);
+    const box = document.createElement("div");
+    box.className = "scene";
+    const h = document.createElement("h3");
+    h.textContent = "Scene "+(i+1)+" · "+heading;
+    const p = document.createElement("p");
+    p.textContent = prompt;
+    box.append(h,p);
+    container.appendChild(box);
+  }
+
+  plan = "NOVAAI MOVIE STUDIO\n"+type+"\n\n"+
+    prompts.join("\n\n");
+  document.getElementById("message").textContent =
+    count+" scene prompts created! Your plan is ready.";
+}
+
+async function copyPlan(){
+  if(!plan){
+    document.getElementById("message").textContent =
+      "Generate your scene prompts first.";
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(plan);
+    document.getElementById("message").textContent =
+      "Movie plan copied!";
+  }catch(e){
+    document.getElementById("message").textContent =
+      "Copy isn't available here. Use Download movie plan instead.";
+  }
+}
+
+function downloadPlan(){
+  if(!plan){
+    document.getElementById("message").textContent =
+      "Generate your scene prompts first.";
+    return;
+  }
+  const blob = new Blob([plan],{type:"text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "novaai-movie-plan.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById("message").textContent =
+    "Movie plan download requested.";
+}
+</script>
+</body>
+</html>
