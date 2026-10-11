@@ -405,5 +405,129 @@ function downloadPlan() {
     "Movie plan download requested.";
 }
 </script>
+
+<!-- NovaAI Movie Studio: Narration Controls -->
+<section id="nova-narration" style="
+  margin: 24px auto;
+  padding: 20px;
+  max-width: 700px;
+  background: #151827;
+  color: white;
+  border-radius: 16px;
+  font-family: Arial, sans-serif;
+">
+  <h2>🎙️ AI Scene Narration</h2>
+  <p>Write what the narrator should say in your movie.</p>
+
+  <textarea
+    id="nova-narration-text"
+    placeholder="Example: A young girl walks through a peaceful park and discovers a beautiful flower."
+    rows="5"
+    maxlength="5000"
+    style="
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 16px;
+    "
+  ></textarea>
+
+  <label for="nova-voice">Narrator voice</label>
+  <select id="nova-voice" style="display:block; width:100%; padding:10px; margin:8px 0 14px;">
+    <option value="">Default voice</option>
+  </select>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button id="nova-preview-voice" type="button">🔊 Preview narration</button>
+    <button id="nova-stop-voice" type="button">⏹ Stop</button>
+  </div>
+
+  <p id="nova-voice-status" role="status" aria-live="polite">
+    Ready to create narration.
+  </p>
+</section>
+
+<script>
+(() => {
+  const textBox = document.getElementById("nova-narration-text");
+  const voiceSelect = document.getElementById("nova-voice");
+  const previewButton = document.getElementById("nova-preview-voice");
+  const stopButton = document.getElementById("nova-stop-voice");
+  const status = document.getElementById("nova-voice-status");
+
+  if (!("speechSynthesis" in window) ||
+      !("SpeechSynthesisUtterance" in window)) {
+    status.textContent =
+      "Speech synthesis is not supported in this browser.";
+    previewButton.disabled = true;
+    return;
+  }
+
+  let voices = [];
+
+  function loadVoices() {
+    voices = window.speechSynthesis.getVoices();
+    const previous = voiceSelect.value;
+
+    voiceSelect.replaceChildren(
+      new Option("Default voice", "")
+    );
+
+    voices.forEach((voice, index) => {
+      const option = new Option(
+        `${voice.name} (${voice.lang})`,
+        String(index)
+      );
+      voiceSelect.add(option);
+    });
+
+    if (previous !== "") {
+      voiceSelect.value = previous;
+    }
+  }
+
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+
+  previewButton.addEventListener("click", () => {
+    const text = textBox.value.trim();
+
+    if (!text) {
+      status.textContent = "Please enter narration text first.";
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const selected = voiceSelect.value;
+
+    if (selected !== "" && voices[Number(selected)]) {
+      utterance.voice = voices[Number(selected)];
+    }
+
+    utterance.onstart = () => {
+      status.textContent = "Narration is playing...";
+    };
+
+    utterance.onend = () => {
+      status.textContent = "Narration finished.";
+    };
+
+    utterance.onerror = () => {
+      status.textContent = "Could not play narration. Try another voice.";
+    };
+
+    window.speechSynthesis.speak(utterance);
+  });
+
+  stopButton.addEventListener("click", () => {
+    window.speechSynthesis.cancel();
+    status.textContent = "Narration stopped.";
+  });
+})();
+</script>
+
 </body>
 </html>
