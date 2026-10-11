@@ -1,0 +1,27 @@
+export default async function handler(req, res) {
+if (req.method !== "POST") {
+res.setHeader("Allow", "POST");
+return res.status(405).json({
+error: "Method not allowed"
+});
+}
+
+const { text } = req.body || {};
+
+if (typeof text !== "string" || !text.trim()) {
+return res.status(400).json({
+error: "Please enter narration text."
+});
+}
+
+if (text.length > 5000) {
+return res.status(400).json({
+error: "Narration must be 5000 characters or fewer."
+});
+}
+
+return res.status(200).json({
+text: text.trim(),
+message: "Narration text is ready for browser speech synthesis."
+});
+}
